@@ -1,0 +1,10 @@
+
+# Python virtual environments
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+
+# Virtual environment inside src
+/src/api/
