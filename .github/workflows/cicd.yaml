@@ -36,6 +36,7 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/python-app:${{ steps.set_sha.outputs.short_sha }}
 
+  
   update-manifest:
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -46,15 +47,21 @@ jobs:
       MANIFEST_PATH: k8s-manifest/deployment.yaml
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Infra Repository
         uses: actions/checkout@v7
+        with:
+          repository: GentritDev/infra-repo
+          token: ${{ secrets.INFRA_REPO_TOKEN }}
+          path: infra-repo
 
       - name: Configure Git
+        working-directory: infra-repo
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Update Kubernetes Manifest
+        working-directory: infra-repo
         run: |
           python - <<'PY'
           import os
@@ -88,6 +95,7 @@ jobs:
           PY
 
       - name: Commit and Push Changes
+        working-directory: infra-repo
         run: |
           git add "$MANIFEST_PATH"
 
