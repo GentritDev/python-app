@@ -43,7 +43,7 @@ jobs:
     env:
       IMAGE_TAG: ${{ needs.build-and-push.outputs.short_sha }}
       IMAGE: ${{ secrets.DOCKER_USERNAME }}/python-app:${{ needs.build-and-push.outputs.short_sha }}
-      MANIFEST_PATH: k8s/deployment.yaml
+      MANIFEST_PATH: k8s-manifest/deployment.yaml
 
     steps:
       - name: Checkout Code
