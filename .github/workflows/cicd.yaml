@@ -1,3 +1,4 @@
+
 name: CI-CD Pipeline
 
 on:
@@ -31,3 +32,46 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/python-app:${{ steps.set_sha.outputs.short_sha }}
+
+  update-manifest:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Infrastructure Repo
+        uses: actions/checkout@v3
+        with:
+          repository: mkbntech/infra-repo
+          token: ${{ secrets.INFRA_REPO_TOKEN }}
+          path: infra-repo
+
+      - name: Install yq
+        run: |
+          sudo wget -q https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Update Image Tag in Helm Values
+        env:
+          IMAGE_TAG: ${{ needs.build-and-push.outputs.short_sha }}
+        run: |
+          cd infra-repo
+          yq -i '.image.tag = strenv(IMAGE_TAG)' helm-charts/python-app/values.yaml
+
+      - name: Commit and Push to Infra Repo
+        env:
+          IMAGE_TAG: ${{ needs.build-and-push.outputs.short_sha }}
+        run: |
+          cd infra-repo
+
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+          git add helm-charts/python-app/values.yaml
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Deploying image tag ${IMAGE_TAG}"
+          git push
